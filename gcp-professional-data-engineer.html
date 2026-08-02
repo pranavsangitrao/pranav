@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDE-PREP — GCP Data Engineer Practice</title>
+<script>
+  (function(){
+    try {
+      const saved = localStorage.getItem('cert_prep_theme');
+      if (saved === 'light' || saved === 'dark'){
+        document.documentElement.dataset.theme = saved;
+      }
+    } catch(e){}
+  })();
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg: #0F1620;
+    --panel: #16202C;
+    --panel-alt: #1C2836;
+    --line: rgba(227,179,65,0.10);
+    --line-strong: rgba(227,179,65,0.22);
+    --text: #E7EDF3;
+    --muted: #8CA0B3;
+    --amber: #E3B341;
+    --teal: #4FD1C5;
+    --coral: #EF6461;
+    --accent-blue: #5B9FE0;
+    --navy-1: #20476E;
+    --navy-2: #173553;
+    --navy-3: #0F2740;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  html[data-theme="light"]{
+    --bg: #F6F7F9;
+    --panel: #FFFFFF;
+    --panel-alt: #F0F2F5;
+    --line: rgba(15,23,42,0.05);
+    --line-strong: rgba(15,23,42,0.13);
+    --text: #1B2430;
+    --muted: #5B6B7C;
+    --amber: #B4790F;
+    --teal: #0E7C72;
+    --coral: #C74A46;
+    --accent-blue: #2D6FAF;
+    --shadow: rgba(15,23,42,0.09);
+    --shadow-hover: rgba(15,23,42,0.14);
+  }
+  :root{
+    --shadow: rgba(0,0,0,0.35);
+    --shadow-hover: rgba(0,0,0,0.5);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      linear-gradient(var(--line) 1px, transparent 1px) 0 0/40px 40px,
+      linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0/40px 40px,
+      var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    min-height:100vh;
+    padding:40px 32px 70px;
+    transition: background-color .15s ease, color .15s ease;
+  }
+
+  .wrap{max-width:1440px;margin:0 auto; position:relative;}
+
+  #screen-quiz, #screen-results, #screen-history{max-width:900px; margin:0 auto;}
+
+  .titleblock{
+    position:relative;
+    display:flex;
+    align-items:center;
+    gap:16px;
+    background:linear-gradient(180deg, var(--navy-1), var(--navy-2));
+    padding:20px 30px;
+    margin-bottom:32px;
+    box-shadow:0 4px 18px var(--shadow);
+    overflow:hidden;
+  }
+  .titleblock::before{
+    content:''; position:absolute; bottom:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg, var(--amber), var(--accent-blue));
+  }
+  .titleblock .tb-logo{
+    width:36px; height:36px; border-radius:50%; background:#fff;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .titleblock .tb-main{flex:1; min-width:0;}
+  .titleblock .doc-id{font-family:var(--mono); font-size:11.5px; color:#AEC2D6; letter-spacing:.14em;}
+  .titleblock h1{font-family:var(--mono); font-size:26px; font-weight:600; margin:6px 0 0; letter-spacing:.01em; color:#fff;}
+  .titleblock .meta{text-align:right; font-family:var(--mono); font-size:11px; color:#AEC2D6; line-height:1.7; flex-shrink:0;}
+  .status-dot{
+    display:inline-block; width:7px; height:7px; border-radius:50%;
+    background:var(--teal); margin-right:6px;
+    animation:pulse-dot 2.2s ease-in-out infinite;
+  }
+  @keyframes pulse-dot{
+    0%,100%{box-shadow:0 0 0 0 rgba(79,209,197,0.5);}
+    50%{box-shadow:0 0 0 5px rgba(79,209,197,0);}
+  }
+
+  .pipeline{display:flex; gap:4px; margin-bottom:22px;}
+  .segment{
+    flex:1; height:10px; background:var(--panel-alt);
+    border:1px solid var(--line-strong); position:relative; overflow:hidden;
+  }
+  .segment::after{content:''; position:absolute; inset:0; background:var(--muted); opacity:0; transform:scaleX(0); transform-origin:left;}
+  .segment.current::after{background:var(--amber); opacity:1; transform:scaleX(1); animation:flow 1.4s linear infinite;}
+  .segment.correct::after{background:var(--teal); opacity:1; transform:scaleX(1);}
+  .segment.wrong::after{background:var(--coral); opacity:1; transform:scaleX(1);}
+  .segment.marked{box-shadow:inset 0 0 0 1px #E8A33D; border-color:#E8A33D;}
+  @keyframes flow{0%{filter:brightness(1);} 50%{filter:brightness(1.6);} 100%{filter:brightness(1);}}
+
+  .screen{display:none;}
+  .screen.active{display:block;}
+
+  .card{background:var(--panel); border:1px solid var(--line-strong); padding:32px; box-shadow:0 4px 18px var(--shadow);}
+
+  .start-card h2{font-family:var(--mono); font-size:16px; color:var(--amber); margin-top:0; letter-spacing:.08em;}
+  .start-card > p{color:var(--muted); line-height:1.65; font-size:14.5px; margin-bottom:26px; max-width:700px;}
+
+  .topic-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:10px; margin-bottom:22px;}
+  .topic-row{
+    display:grid; grid-template-columns:1fr; align-items:center; gap:14px;
+    border:1px solid var(--line-strong); background:var(--panel-alt);
+    padding:14px 16px; cursor:pointer;
+    transition:border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+  }
+  .topic-row:hover{border-color:var(--amber); transform:translateY(-3px); box-shadow:0 8px 20px var(--shadow-hover);}
+  .topic-row.selected{border-color:var(--amber); background:rgba(227,179,65,0.08);}
+  .topic-row[data-topic="__all__"]{grid-column:1/-1;}
+  .topic-name{font-size:14px; font-weight:500;}
+
+  .btn{
+    font-family:var(--mono); font-size:13px; letter-spacing:.06em;
+    background:var(--amber); color:#14100A; border:none; padding:13px 22px;
+    cursor:pointer; font-weight:600; transition:filter .15s ease, transform .1s ease;
+  }
+  .btn:hover{filter:brightness(1.1);}
+  .btn:active{transform:scale(.98);}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+  .btn.ghost{background:transparent; color:var(--amber); border:1px solid var(--amber);}
+  .btn.ghost:hover{background:rgba(227,179,65,0.08);}
+  .btn-row{display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;}
+
+  .hud{display:flex; justify-content:space-between; align-items:baseline; font-family:var(--mono); font-size:12px; color:var(--muted); margin-bottom:14px;}
+  .hud .timer{color:var(--amber); font-size:15px; font-weight:600;}
+  .hud .timer.low{color:var(--coral);}
+  .stage-tag{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.1em;
+    color:var(--amber); border:1px solid var(--line-strong);
+    padding:3px 8px; margin-bottom:14px; text-transform:uppercase;
+  }
+  .type-tag{color:var(--muted);}
+  .question-text{font-size:16.5px; line-height:1.55; margin:0 0 22px;}
+  .options{display:flex; flex-direction:column;}
+  .option{
+    display:flex; align-items:flex-start; gap:10px;
+    padding:9px 6px; cursor:pointer; font-size:14.5px; line-height:1.5;
+    border-radius:3px;
+    transition:background .12s ease;
+  }
+  .option:hover{background:var(--panel-alt);}
+  .option.selected{background:var(--panel-alt);}
+  .option .opt-radio{
+    width:15px; height:15px; min-width:15px; margin-top:2px;
+    border-radius:50%; border:1.5px solid var(--muted);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .option.selected .opt-radio{border-color:var(--amber);}
+  .option.selected .opt-radio::after{
+    content:''; width:7px; height:7px; border-radius:50%; background:var(--amber);
+  }
+  .option .opt-letter{font-weight:600; margin-right:2px;}
+  .option.selected .letter{color:var(--amber); border-color:var(--amber);}
+
+  .nav-row{display:flex; justify-content:space-between; margin-top:26px;}
+
+  /* ===== EXAM-PLAYER STYLE (quiz question screen only) ===== */
+  /* Fixed palette to match the reference exam-software look, independent of the site's light/dark toggle. */
+  #screen-quiz .exam-frame{
+    border:1px solid #0F2740;
+    box-shadow:0 10px 30px rgba(0,0,0,0.35);
+    overflow:hidden;
+  }
+  #screen-quiz .exam-topbar{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    background:#EEF2F5; color:#2A3B4C; padding:9px 18px;
+    font-family:var(--sans); font-size:12.5px; border-bottom:1px solid #D7DEE6;
+  }
+  #screen-quiz .exam-mark{display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none; white-space:nowrap;}
+  #screen-quiz .exam-mark input{accent-color:#2D6FAF; cursor:pointer; width:14px; height:14px;}
+  #screen-quiz .exam-qcounter{font-weight:600; letter-spacing:.01em; text-align:center;}
+  #screen-quiz .exam-qcounter .badge{
+    display:inline-block; border:1px solid #2D6FAF; color:#2D6FAF; padding:0 7px;
+    border-radius:3px; font-weight:700; margin:0 3px;
+  }
+  #screen-quiz .exam-timer{font-family:var(--mono); font-weight:700; color:#2D6FAF; font-size:13.5px; white-space:nowrap;}
+  #screen-quiz .exam-timer.low{color:#C0392B;}
+
+  #screen-quiz .exam-header{
+    display:flex; align-items:center; gap:12px;
+    background:linear-gradient(180deg,#20476E,#173553);
+    padding:14px 20px;
+  }
+  #screen-quiz .exam-logo{
+    width:30px; height:30px; border-radius:50%; background:#fff;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  #screen-quiz .exam-title-wrap{color:#fff;}
+  #screen-quiz .exam-title{font-family:var(--sans); font-size:14.5px; font-weight:600; letter-spacing:.01em;}
+  #screen-quiz .exam-subtitle{font-size:11px; color:#AEC2D6; font-weight:400; margin-top:1px; font-family:var(--mono); letter-spacing:.03em;}
+
+  #screen-quiz .exam-body{background:#FFFFFF; padding:28px 30px 22px;}
+  #screen-quiz .exam-body .stage-tag{border-color:#D7DEE6; color:#2D6FAF; background:#F3F7FB;}
+  #screen-quiz .exam-body .type-tag{color:#8393A2;}
+  #screen-quiz .exam-body .question-text{color:#1B3A6B; font-size:15.5px;}
+  #screen-quiz .exam-body .option{background:#fff; border:1px solid #D7DEE6; color:#243447;}
+  #screen-quiz .exam-body .option:hover{border-color:#2D6FAF; background:#F5F9FD;}
+  #screen-quiz .exam-body .option.selected{border-color:#2D6FAF; background:#EAF2FB;}
+  #screen-quiz .exam-body .option .letter{border-color:#2D6FAF; color:#2D6FAF; border-radius:50%;}
+  #screen-quiz .exam-body .option.selected .letter{background:#2D6FAF; color:#fff; border-color:#2D6FAF;}
+
+  #screen-quiz .exam-footer{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    background:linear-gradient(180deg,#173553,#0F2740);
+    padding:14px 20px;
+  }
+  #screen-quiz .exam-footer-group{display:flex; gap:10px;}
+  #screen-quiz .exam-btn{
+    font-family:var(--sans); font-size:12.5px; font-weight:600; letter-spacing:.02em;
+    padding:9px 20px; border:1px solid transparent; cursor:pointer;
+    border-radius:3px; transition:filter .12s ease, transform .12s ease;
+  }
+  #screen-quiz .exam-btn:hover{filter:brightness(1.12); transform:translateY(-1px);}
+  #screen-quiz .exam-btn.blue{background:#2D6FAF; color:#fff;}
+  #screen-quiz .exam-btn.gold{background:#E8A33D; color:#3A2A0C;}
+  #screen-quiz .exam-btn.navy{background:#0F2740; color:#fff; border-color:#3A5978;}
+
+  @media (max-width:640px){
+    #screen-quiz .exam-topbar{flex-wrap:wrap; justify-content:center; text-align:center;}
+    #screen-quiz .exam-footer{justify-content:center;}
+  }
+
+  .score-row{display:flex; align-items:baseline; gap:14px; margin-bottom:6px;}
+  .score-big{font-family:var(--mono); font-size:42px; font-weight:700; color:var(--amber);}
+  .score-label{color:var(--muted); font-size:13px;}
+  .breakdown{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:22px 0 8px;}
+  .stat{border:1px solid var(--line-strong); background:var(--panel-alt); padding:12px; text-align:center;}
+  .stat .n{font-family:var(--mono); font-size:20px; font-weight:600;}
+  .stat.correct .n{color:var(--teal);}
+  .stat.wrong .n{color:var(--coral);}
+  .stat .lbl{font-size:11px; color:var(--muted); margin-top:2px; letter-spacing:.04em;}
+
+  .review-item{border:1px solid var(--line-strong); background:var(--panel-alt); padding:16px; margin-top:14px;}
+  .review-item .rq{font-size:14.5px; margin:0 0 10px; line-height:1.5;}
+  .review-answer{font-family:var(--mono); font-size:12.5px; display:flex; gap:8px; margin-bottom:4px; align-items:flex-start;}
+  .review-answer.correct{color:var(--teal);}
+  .review-answer.wrong{color:var(--coral);}
+  .explain{color:var(--muted); font-size:13px; line-height:1.55; margin-top:8px; padding-top:8px; border-top:1px dashed var(--line-strong);}
+
+  .link-btn{
+    font-family:var(--mono); font-size:11.5px; color:var(--muted);
+    background:none; border:none; cursor:pointer; padding:0; letter-spacing:.04em;
+    text-decoration:underline; text-underline-offset:2px;
+  }
+  .link-btn:hover{color:var(--amber);}
+
+  .attempt-row{
+    display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:14px;
+    border:1px solid var(--line-strong); background:var(--panel-alt);
+    padding:14px 16px; margin-bottom:8px; cursor:pointer;
+    transition:border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+  }
+  .attempt-row:hover{border-color:var(--amber); transform:translateY(-2px); box-shadow:0 6px 16px var(--shadow-hover);}
+  .attempt-row.locked{cursor:default;}
+  .attempt-row.locked:hover{border-color:var(--line-strong); transform:none; box-shadow:none;}
+  .attempt-domain{font-size:13.5px; font-weight:600;}
+  .attempt-meta{font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:3px;}
+  .attempt-score{font-family:var(--mono); font-size:17px; font-weight:700;}
+  .attempt-score.good{color:var(--teal);}
+  .attempt-score.bad{color:var(--coral);}
+  .attempt-badge{
+    font-family:var(--mono); font-size:9px; letter-spacing:.06em; color:var(--muted);
+    border:1px solid var(--line-strong); padding:3px 6px; white-space:nowrap; text-transform:uppercase;
+  }
+
+  .weak-panel{margin-top:22px; padding-top:18px; border-top:1px dashed var(--line-strong);}
+  .weak-panel h3{font-family:var(--mono); font-size:12px; color:var(--amber); letter-spacing:.08em; margin:0 0 12px;}
+  .weak-item{
+    border:1px solid var(--line-strong); background:var(--panel-alt);
+    padding:12px 16px; margin-bottom:6px; cursor:pointer;
+    transition:border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+  }
+  .weak-item:hover{border-color:var(--amber); transform:translateY(-2px); box-shadow:0 6px 16px var(--shadow-hover);}
+  .weak-item-head{display:flex; justify-content:space-between; align-items:center; gap:10px;}
+  .weak-q{font-size:13px; line-height:1.4;}
+  .weak-count{font-family:var(--mono); font-size:11px; color:var(--coral); white-space:nowrap;}
+  .weak-domain{font-family:var(--mono); font-size:10.5px; color:var(--muted); margin-top:4px; letter-spacing:.03em;}
+  .weak-detail{display:none; margin-top:10px; padding-top:10px; border-top:1px dashed var(--line-strong);}
+  .weak-item.open .weak-detail{display:block;}
+  .empty-note{color:var(--muted); font-size:13px; font-style:italic;}
+
+  footer{text-align:center; color:var(--muted); font-family:var(--mono); font-size:11px; margin-top:32px; letter-spacing:.05em;}
+
+  @media (max-width:520px){
+    .titleblock{flex-wrap:wrap; gap:8px; padding:20px 22px;}
+    .titleblock .meta{text-align:left;}
+    .titleblock h1{font-size:20px;}
+    .titleblock::after{display:none;}
+    .score-big{font-size:32px;}
+  }
+  @media (prefers-reduced-motion: reduce){.segment.current::after{animation:none;} .status-dot{animation:none;}}
+
+  .settings-wrap{position:fixed; top:24px; right:24px; z-index:50;}
+  .settings-btn{
+    width:40px; height:40px; display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--line-strong); background:var(--panel); color:var(--muted);
+    cursor:pointer; font-size:18px; transition:color .12s ease, border-color .12s ease;
+    box-shadow:0 4px 14px var(--shadow);
+  }
+  .settings-btn:hover{color:var(--amber); border-color:var(--amber);}
+
+  .settings-panel{
+    display:none; position:absolute; top:48px; right:0; width:270px;
+    border:1px solid var(--line-strong); background:var(--panel); padding:16px;
+    box-shadow:0 10px 30px var(--shadow-hover);
+  }
+  .settings-panel.open{display:block;}
+  .settings-panel h4{
+    font-family:var(--mono); font-size:10.5px; color:var(--amber); letter-spacing:.08em;
+    margin:0 0 10px; text-transform:uppercase;
+  }
+  .theme-option{
+    display:flex; align-items:flex-start; gap:10px; padding:10px; margin-bottom:6px;
+    border:1px solid var(--line-strong); background:var(--panel-alt); cursor:pointer;
+  }
+  .theme-option:last-child{margin-bottom:0;}
+  .theme-option:hover{border-color:var(--amber);}
+  .theme-option.active{border-color:var(--amber); background:rgba(227,179,65,0.08);}
+  .theme-option .dot{
+    width:10px; height:10px; border-radius:50%; border:1px solid var(--line-strong);
+    margin-top:3px; flex-shrink:0;
+  }
+  .theme-option.active .dot{background:var(--amber); border-color:var(--amber);}
+  .theme-option .tlabel{font-size:12.5px; font-weight:600;}
+  .theme-option .tsub{font-family:var(--mono); font-size:10.5px; color:var(--muted); margin-top:2px;}
+</style>
+</head>
+<body>
+<div class="settings-wrap">
+  <button class="settings-btn" id="settings-btn" aria-label="Settings">⚙</button>
+  <div class="settings-panel" id="settings-panel">
+    <h4>THEME</h4>
+    <div class="theme-option" data-theme-choice="light">
+      <span class="dot"></span>
+      <div>
+        <div class="tlabel">Light Minimal Theme</div>
+        <div class="tsub">Best for day study</div>
+      </div>
+    </div>
+    <div class="theme-option" data-theme-choice="dark">
+      <span class="dot"></span>
+      <div>
+        <div class="tlabel">Dark Mode</div>
+        <div class="tsub">Best for night study</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="wrap">
+
+  <a href="index.html?provider=gcp" style="display:inline-block; font-family:var(--mono); font-size:12px; color:var(--muted); text-decoration:none; letter-spacing:.05em; margin-bottom:12px;">← GCP CERTIFICATIONS</a>
+
+  <div class="titleblock">
+    <div class="tb-logo">
+      <svg viewBox="0 0 24 24" width="18" height="18"><path d="M5 13l4 4L19 7" fill="none" stroke="#173553" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="tb-main">
+      <div class="doc-id">GCP // PROFESSIONAL DATA ENGINEER</div>
+      <h1>Professional Data Engineer — Practice Set</h1>
+    </div>
+    <div class="meta" id="titleblock-meta"><span class="status-dot"></span>110 ITEMS BUILT<br>TIMED · SCORED · REVIEWED</div>
+  </div>
+
+  <div class="pipeline" id="pipeline"></div>
+
+  <!-- START SCREEN -->
+  <div class="screen active" id="screen-start">
+    <div class="card start-card">
+      <h2>SELECT A DOMAIN</h2>
+      <p>Pick one domain to drill, or run the full mixed set. Each domain blends scenario-based questions ("you are designing/troubleshooting X...") with direct recall questions, at Professional Data Engineer exam difficulty. Each question carries a 60-second clock.</p>
+      <div class="topic-grid" id="topic-grid"></div>
+      <div class="btn-row">
+        <span style="font-family:var(--mono); font-size:11px; color:var(--muted);" id="selection-summary">Select a domain above</span>
+        <button class="btn" id="btn-start" disabled>START ASSESSMENT →</button>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="link-btn" id="btn-view-history">VIEW PAST ATTEMPTS</button>
+      </div>
+      <div class="weak-panel" id="weak-panel" style="display:none;">
+        <h3>WEAK SPOTS — MOST MISSED QUESTIONS</h3>
+        <div id="weak-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY SCREEN -->
+  <div class="screen" id="screen-history">
+    <button class="back-link" id="btn-history-back" style="font-family:var(--mono); font-size:12px; color:var(--muted); background:none; border:none; cursor:pointer; padding:0 0 14px; letter-spacing:.05em; display:flex; align-items:center; gap:6px;">← BACK</button>
+    <div class="card" id="history-list-view">
+      <h2>PAST ATTEMPTS</h2>
+      <p style="color:var(--muted); font-size:13px; line-height:1.6; margin-bottom:18px;">Stored on this device only. Attempts ended early show a score but no answer review, matching how they were handled at the time.</p>
+      <div id="history-list"></div>
+      <div class="btn-row" style="margin-top:18px;">
+        <button class="link-btn" id="btn-clear-history">CLEAR HISTORY</button>
+      </div>
+    </div>
+    <div id="history-detail-view" style="display:none;">
+      <div class="card">
+        <h2 id="history-detail-heading">ATTEMPT DETAIL</h2>
+        <div class="breakdown" id="history-detail-stats"></div>
+      </div>
+      <div id="history-detail-review"></div>
+    </div>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div class="screen" id="screen-quiz">
+    <button class="link-btn" id="btn-quiz-back" style="margin-bottom:10px;">← DOMAIN SELECTION</button>
+
+    <div class="exam-frame">
+      <div class="exam-topbar">
+        <label class="exam-mark">
+          <input type="checkbox" id="mark-review">
+          Mark
+        </label>
+        <div class="exam-qcounter" id="hud-progress">QUESTION <span class="badge">1</span> OF <span class="badge">20</span></div>
+        <div class="exam-timer" id="hud-timer">00:60</div>
+      </div>
+
+      <div class="exam-header">
+        <div class="exam-logo">
+          <svg viewBox="0 0 24 24" width="18" height="18"><path d="M5 13l4 4L19 7" fill="none" stroke="#173553" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="exam-title-wrap">
+          <div class="exam-title">GCP Professional Data Engineer — Practice Set</div>
+          <div class="exam-subtitle">CUSTOM EXAM · PRACTICE PLAYER</div>
+        </div>
+      </div>
+
+      <div class="exam-body">
+        <div class="stage-tag"><span id="q-domain">STAGE — INGESTION</span><span class="type-tag" id="q-type">· scenario</span></div>
+        <p class="question-text" id="q-text"></p>
+        <div class="options" id="q-options"></div>
+      </div>
+
+      <div class="exam-footer">
+        <div class="exam-footer-group">
+          <button class="exam-btn blue" id="btn-skip">SKIP</button>
+        </div>
+        <div class="exam-footer-group">
+          <button class="exam-btn gold" id="btn-end">END TEST</button>
+        </div>
+        <div class="exam-footer-group">
+          <button class="exam-btn navy" id="btn-next">NEXT →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS SCREEN -->
+  <div class="screen" id="screen-results">
+    <div class="card">
+      <div class="score-row">
+        <span class="score-big" id="res-score">0%</span>
+        <span class="score-label">FINAL SCORE</span>
+      </div>
+      <div class="breakdown">
+        <div class="stat correct"><div class="n" id="res-correct">0</div><div class="lbl">CORRECT</div></div>
+        <div class="stat wrong"><div class="n" id="res-wrong">0</div><div class="lbl">INCORRECT</div></div>
+        <div class="stat"><div class="n" id="res-time">0:00</div><div class="lbl">TIME USED</div></div>
+      </div>
+      <div class="btn-row" style="margin-top:22px;">
+        <button class="btn ghost" id="btn-retry">CHOOSE ANOTHER DOMAIN</button>
+      </div>
+    </div>
+    <div id="review-list"></div>
+  </div>
+
+ <!-- <footer>NOT AN OFFICIAL GOOGLE CLOUD PRODUCT · PRACTICE MATERIAL ONLY</footer> -->
+</div>
+
+
+<script>
+// GCP Professional Data Engineer — Practice Question Bank
+// Reorganized into the 9-topic exam study structure (Ingestion, Storage,
+// Processing, Analysis & Visualization, ML Integration, Security & Governance,
+// Monitoring & Optimization, Workflow Orchestration, Designing Data Pipelines).
+// Each entry: { type: "scenario"|"direct", q, options[4], answer(index), explain }
+
+const QUESTION_BANK = {
+
+"Data Ingestion": [
+  {"type": "scenario", "q": "You need to ingest real-time streaming events at scale with at-least-once delivery guarantees. Which service?", "options": ["Cloud Pub/Sub", "Cloud Storage Transfer Service", "Cloud Tasks", "Cloud Scheduler"], "answer": 0, "explain": "Pub/Sub is the managed messaging service built for real-time event ingestion at scale, offering at-least-once delivery to downstream consumers like Dataflow."},
+  {"type": "scenario", "q": "You need to ingest data from an on-premises Oracle database into BigQuery with minimal ongoing operational overhead, supporting both an initial bulk load and ongoing change data capture. Which service should you use?", "options": ["Datastream", "Cloud Data Fusion pipelines only", "A Dataflow pipeline you write from scratch", "Storage Transfer Service"], "answer": 0, "explain": "Datastream is Google's serverless CDC and replication service, purpose-built to replicate data from sources like Oracle and MySQL into BigQuery or Cloud Storage with minimal operational overhead, handling both backfill and ongoing change streams."},
+  {"type": "direct", "q": "Which service is purpose-built for transferring large datasets from on-premises storage or other clouds into Cloud Storage?", "options": ["Storage Transfer Service", "Pub/Sub", "Datastream", "Cloud Composer"], "answer": 0, "explain": "Storage Transfer Service is designed for large-scale batch data transfers into (or between) Cloud Storage buckets, including from on-prem systems and other cloud providers."},
+  {"type": "scenario", "q": "You need to migrate over a petabyte of on-premises data to GCP, and your network bandwidth is insufficient to transfer it online in a reasonable time. Which product should you use?", "options": ["Transfer Appliance", "Storage Transfer Service", "gsutil over the internet", "Cloud VPN"], "answer": 0, "explain": "Transfer Appliance is a physical, high-capacity storage device Google ships to you for offline bulk data transfer, intended for cases where network transfer would be impractically slow."},
+  {"type": "direct", "q": "In Pub/Sub, what does a 'subscription' represent?", "options": ["A stream of messages a subscriber pulls or has pushed to it from a topic", "A schema definition for message payloads", "A billing account for message volume", "A Dataflow job template"], "answer": 0, "explain": "A subscription represents the message stream, delivered from a topic, that a specific subscriber consumes — multiple subscriptions on one topic each get their own copy of messages."},
+  {"type": "scenario", "q": "Your streaming ingestion pipeline occasionally receives duplicate messages from Pub/Sub due to at-least-once delivery semantics. Downstream processing must not double-count these events. What should you do?", "options": ["Switch to a different messaging service, since Pub/Sub can't help", "Use deduplication via unique message IDs and idempotent processing downstream (e.g., Beam's built-in deduplication)", "Ignore duplicates since they are rare", "Increase the acknowledgement deadline"], "answer": 1, "explain": "Because Pub/Sub guarantees at-least-once delivery, consumers must handle duplicates — typically via unique message IDs, Beam's exactly-once processing features, or idempotent writes downstream."},
+  {"type": "direct", "q": "Which Pub/Sub feature helps preserve the order of messages sharing the same key when consumed by a subscriber?", "options": ["Ordering keys", "Dead-letter topics", "Push subscriptions", "Message retention duration"], "answer": 0, "explain": "Ordering keys let Pub/Sub deliver messages with the same key to subscribers in the order they were published, when ordering is enabled on the subscription."},
+  {"type": "scenario", "q": "You're building a pipeline to ingest data from thousands of IoT devices, and you need to isolate malformed or unprocessable messages without blocking the healthy message flow. What should you configure?", "options": ["A dead-letter topic on the Pub/Sub subscription", "A longer message retention period", "Disabling acknowledgements", "A single global subscription for all devices"], "answer": 0, "explain": "A dead-letter topic captures messages that repeatedly fail processing (after a configured number of delivery attempts), so bad messages don't block the pipeline and can be inspected separately."},
+  {"type": "direct", "q": "Which GCP service would you use to visually build no/low-code ETL/ELT ingestion pipelines with a graphical interface and pre-built connectors?", "options": ["Cloud Data Fusion", "The Dataflow SDK", "BigQuery", "Cloud Functions"], "answer": 0, "explain": "Data Fusion offers a visual, drag-and-drop interface (based on CDAP) with many pre-built connectors and transformations, aimed at users who prefer low-code pipeline development."},
+  {"type": "scenario", "q": "You need to load data continuously into BigQuery in near real time (sub-minute latency) from an application, and are prepared to manage schema and per-row insert costs. Which approach fits best?", "options": ["BigQuery streaming inserts", "Daily batch load jobs", "BigQuery Data Transfer Service on a schedule", "Exporting to Cloud Storage then loading nightly"], "answer": 0, "explain": "Streaming inserts (via the API, or the newer Storage Write API) make rows queryable within seconds, appropriate when near-real-time availability is required, unlike scheduled batch loads."},
+  {"type": "direct", "q": "Which API is recommended over the legacy streaming insert API for high-throughput, cost-efficient streaming writes into BigQuery?", "options": ["BigQuery Storage Write API", "BigQuery Jobs API", "tabledata.insertAll (legacy)", "BigQuery Reservation API"], "answer": 0, "explain": "The Storage Write API supports exactly-once semantics and is generally more throughput-efficient and cost-effective than the older tabledata.insertAll streaming method."}
+],
+
+"Data Storage": [
+  {"type": "direct", "q": "You need ANSI-SQL analytics on petabyte-scale structured data with no infrastructure to manage. Which service fits best?", "options": ["BigQuery", "Cloud Bigtable", "Cloud SQL", "Filestore"], "answer": 0, "explain": "BigQuery is Google Cloud's serverless data warehouse, built for large-scale SQL analytics without cluster management. Bigtable is a NoSQL wide-column store, Cloud SQL is for transactional OLTP workloads, and Filestore is managed NFS file storage."},
+  {"type": "scenario", "q": "You need single-digit millisecond read/write latency for time-series IoT sensor data at massive throughput. Which service?", "options": ["BigQuery", "Cloud Bigtable", "Cloud Spanner", "Cloud SQL"], "answer": 1, "explain": "Cloud Bigtable is designed for exactly this: high-throughput, low-latency NoSQL workloads like time-series and IoT data. BigQuery is optimized for analytics, not low-latency point lookups."},
+  {"type": "scenario", "q": "Which service provides a fully managed, globally distributed relational database with strong consistency and horizontal scale?", "options": ["Cloud SQL", "Cloud Spanner", "BigQuery", "Firestore"], "answer": 1, "explain": "Cloud Spanner combines relational structure and ACID transactions with horizontal scalability across regions — something traditional relational databases like Cloud SQL can't do."},
+  {"type": "scenario", "q": "Which Cloud Storage class is most cost-effective for data accessed less than once a year, such as compliance archives?", "options": ["Standard", "Nearline", "Coldline", "Archive"], "answer": 3, "explain": "Archive storage has the lowest storage cost of the four classes and is intended for data accessed roughly once a year or less, with higher retrieval costs in exchange."},
+  {"type": "scenario", "q": "Your team stores clickstream logs that are queried heavily for the first 30 days after ingestion, then rarely accessed but must be retained for 3 years for compliance. Cost is a top concern. What should you do?", "options": ["Store everything in Cloud Storage Standard indefinitely", "Use Cloud Storage Autoclass or lifecycle rules to transition objects to Nearline/Coldline/Archive as they age", "Move the data to Cloud SQL for cheaper storage", "Keep everything in Bigtable"], "answer": 1, "explain": "Autoclass or Object Lifecycle Management automatically transitions objects across storage classes as access patterns change, minimizing cost while meeting retention requirements without manual intervention."},
+  {"type": "direct", "q": "Which Cloud Storage feature automatically moves objects between storage classes based on access patterns without you writing lifecycle rules?", "options": ["Autoclass", "Requester Pays", "Object Versioning", "Pub/Sub notifications"], "answer": 0, "explain": "Autoclass automatically transitions objects among Standard, Nearline, Coldline, and Archive based on access frequency, removing the need for manual lifecycle policies."},
+  {"type": "scenario", "q": "A finance team needs a relational database for a new global application requiring 99.999% availability, cross-region strong consistency, and horizontal write scaling beyond what a single Cloud SQL instance can provide. Which should you recommend?", "options": ["Cloud SQL with read replicas", "Cloud Spanner multi-region configuration", "BigQuery", "Firestore in Datastore mode"], "answer": 1, "explain": "Only Spanner offers horizontally scalable relational storage with strong global consistency and the highest availability SLA among GCP's relational options."},
+  {"type": "direct", "q": "Which Bigtable row key design practice most commonly causes hotspotting?", "options": ["Using a monotonically increasing value (like a raw timestamp) as the start of the row key", "Distributing writes evenly across the keyspace", "Using field promotion in row key design", "Choosing a row key with a high-cardinality prefix"], "answer": 0, "explain": "Sequential row keys (e.g., raw timestamps) cause all recent writes to land on the same tablet/node, creating a hotspot; a common fix is to salt or hash the prefix, or reverse the timestamp."},
+  {"type": "scenario", "q": "You're migrating an on-prem application that depends on standard POSIX file semantics via NFS, with minimal application changes allowed. Which storage should you use?", "options": ["Cloud Storage", "Filestore", "A Persistent Disk snapshot", "Cloud Bigtable"], "answer": 1, "explain": "Filestore provides managed NFS file storage with POSIX semantics, making it the right fit for lift-and-shift of file-share dependent applications, unlike object storage like Cloud Storage."},
+  {"type": "direct", "q": "What is the primary use case for BigQuery external (federated) tables over native tables?", "options": ["Querying data directly in Cloud Storage, Bigtable, or Sheets without loading/duplicating it into BigQuery storage", "Improving query performance over native tables", "Enabling streaming inserts", "Reducing IAM complexity"], "answer": 0, "explain": "External tables let BigQuery query data that lives in Cloud Storage, Bigtable, Drive, etc. in place — useful for infrequently queried data or avoiding duplication, at some performance cost versus native storage."},
+  {"type": "scenario", "q": "A media company stores petabytes of archival footage accessed on average about once every 90 days, but retrieval must still return with millisecond latency, not a multi-hour restore delay. Which storage class minimizes cost while meeting this?", "options": ["Archive", "Coldline", "Nearline", "Standard"], "answer": 1, "explain": "All GCS storage classes offer the same millisecond first-byte latency; they differ in monthly cost and minimum storage duration. Coldline is priced for data accessed roughly once per 90 days, making it the best fit here."},
+  {"type": "direct", "q": "Which BigQuery pricing model charges based on the number of bytes processed by each query?", "options": ["On-demand pricing", "Flat-rate (capacity-based) pricing", "Storage pricing", "Streaming insert pricing"], "answer": 0, "explain": "On-demand pricing bills per query based on bytes scanned; flat-rate/capacity pricing instead reserves dedicated slots for a fixed cost regardless of query volume."},
+  {"type": "scenario", "q": "Your organization wants predictable monthly BigQuery costs because query volume from hundreds of analysts is hard to forecast and often spikes. Which pricing model should you adopt?", "options": ["On-demand pricing", "Flat-rate/capacity-based pricing with reservations", "Per-query pricing with quotas", "Storage-only billing"], "answer": 1, "explain": "Capacity-based pricing (via BigQuery editions/reservations) provides a fixed cost for a set amount of query processing capacity (slots), giving predictable spend regardless of query volume spikes."},
+  {"type": "direct", "q": "Which storage option is best suited to serve as a POSIX-compliant shared file system for an HPC workload running on multiple Compute Engine VMs?", "options": ["Filestore", "Cloud Storage", "A single-instance Persistent Disk", "Cloud Bigtable"], "answer": 0, "explain": "Filestore is a managed NFS solution designed to be mounted concurrently by multiple Compute Engine VMs, which is what HPC and similar shared-filesystem workloads need."}
+],
+
+"Data Processing & Transformation": [
+  {"type": "scenario", "q": "Which service should you use to build a unified batch and streaming pipeline based on Apache Beam?", "options": ["Dataflow", "Dataproc", "Data Fusion", "Cloud Composer"], "answer": 0, "explain": "Dataflow is Google's fully managed runner for Apache Beam pipelines, supporting unified batch and streaming processing with autoscaling."},
+  {"type": "scenario", "q": "Your team wants to migrate existing Hadoop and Spark jobs to GCP with minimal rewrite. Which service?", "options": ["Dataflow", "Dataproc", "BigQuery", "Bigtable"], "answer": 1, "explain": "Dataproc runs managed Hadoop and Spark clusters, making it the natural lift-and-shift target for existing Hadoop/Spark workloads."},
+  {"type": "direct", "q": "In a Dataflow/Beam streaming pipeline, which windowing strategy groups data into fixed, non-overlapping time intervals (e.g. every 1 minute)?", "options": ["Fixed windows", "Sliding windows", "Session windows", "Global window"], "answer": 0, "explain": "Fixed windows divide the stream into consistent, non-overlapping time buckets — the simplest and most common windowing strategy for regular aggregation."},
+  {"type": "direct", "q": "Which windowing strategy groups events based on bursts of activity separated by gaps of inactivity?", "options": ["Session windows", "Fixed windows", "Sliding windows", "Global window"], "answer": 0, "explain": "Session windows have dynamic boundaries defined by a gap duration — ideal for grouping bursts of user activity like clickstreams."},
+  {"type": "scenario", "q": "What is the recommended way to handle data that arrives after its event-time window has already closed in a streaming pipeline?", "options": ["Use watermarks with allowed lateness", "Silently drop all late data", "Reprocess the entire dataset every day", "Route late data through Cloud Scheduler"], "answer": 0, "explain": "Watermarks estimate how complete the input is, and 'allowed lateness' lets you configure a grace period during which late data can still update results before being dropped."},
+  {"type": "scenario", "q": "Your Dataflow streaming pipeline needs to autoscale workers based on backlog and CPU utilization without manual intervention. What should you ensure?", "options": ["Streaming Engine and autoscaling are enabled on the Dataflow job", "Dataproc autoscaling policies are used instead", "Workers are resized manually via gcloud on a schedule", "Windowing is disabled"], "answer": 0, "explain": "Dataflow's autoscaling (paired with Streaming Engine for streaming jobs) automatically adjusts the number of workers based on pipeline backlog and resource utilization."},
+  {"type": "direct", "q": "What is a side input in Apache Beam/Dataflow used for?", "options": ["Providing additional, typically smaller, data to a ParDo transform for use alongside the main input elements", "Splitting a pipeline into two independent outputs", "Handling pipeline errors", "Triggering windows early"], "answer": 0, "explain": "A side input lets a transform access a supplementary dataset (like a lookup table) while processing elements from the main PCollection."},
+  {"type": "scenario", "q": "You want to reprocess historical data through the same pipeline logic used for your live streaming pipeline, without maintaining two separate codebases. What Beam/Dataflow capability enables this?", "options": ["Beam's unified model lets the same pipeline code run in both batch and streaming mode", "Dataproc job templates", "BigQuery scheduled queries", "Cloud Composer DAG parameterization"], "answer": 0, "explain": "Apache Beam's programming model abstracts over batch and streaming, so the same pipeline code (with PCollections) can run against bounded (batch) or unbounded (streaming) sources with minimal changes."},
+  {"type": "direct", "q": "In Dataproc, what is the primary benefit of using an ephemeral cluster per job instead of a long-running cluster?", "options": ["You only pay for compute while the job runs, and each job gets a clean, isolated environment", "Ephemeral clusters have unlimited storage", "Ephemeral clusters bypass IAM entirely", "Ephemeral clusters cannot autoscale"], "answer": 0, "explain": "Spinning up a cluster per job (often via workflow templates) avoids paying for idle cluster time and isolates dependencies/config between jobs, which is a recommended Dataproc cost and reliability pattern."},
+  {"type": "scenario", "q": "A batch Spark job occasionally runs long due to a few straggler tasks that take much longer than the others on a Dataproc cluster. Which feature can help mitigate this?", "options": ["Enabling graceful decommissioning only", "Increasing preemptible secondary workers only", "Enabling Spark's speculative execution", "Disabling autoscaling"], "answer": 2, "explain": "Spark's speculative execution reruns slow-running (straggler) tasks on other nodes and uses whichever finishes first, mitigating the impact of a few slow tasks on overall job time."},
+  {"type": "direct", "q": "Which Dataflow transform would you use to combine multiple elements in a PCollection into a single aggregated result, such as a sum or count, per window?", "options": ["Combine (e.g., Combine.globally or Combine.perKey)", "ParDo", "GroupByKey alone", "Flatten"], "answer": 0, "explain": "Combine transforms are optimized for associative/commutative aggregation (sum, count, etc.), often more efficient than a raw GroupByKey followed by manual aggregation."},
+  {"type": "scenario", "q": "Your streaming pipeline must emit partial (speculative) results before a window closes, in addition to the final result when the window closes, because downstream dashboards need low-latency partial updates. What Beam concept should you use?", "options": ["Custom triggers (early/repeated firing) on the windowing strategy", "Increasing parallelism", "Adding more side inputs", "Switching to batch mode"], "answer": 0, "explain": "Triggers control when a window emits results — configuring early/repeated triggers lets a pipeline emit speculative panes before the window's watermark closes it, in addition to (or instead of) the final firing."},
+  {"type": "direct", "q": "What does the term 'backpressure' refer to in a streaming data pipeline?", "options": ["A signal that downstream stages are processing more slowly than data is arriving, causing upstream stages to slow down or buffer", "A method for encrypting data in transit", "A BigQuery cost control feature", "A Pub/Sub retention setting"], "answer": 0, "explain": "Backpressure occurs when a pipeline stage can't keep up with the incoming data rate, and the system needs to throttle upstream production or buffer to avoid overload."},
+  {"type": "scenario", "q": "You need to join a large, frequently-changing streaming PCollection with a much smaller reference dataset that updates every few minutes, inside a Dataflow pipeline. What's the recommended pattern?", "options": ["A side input that's refreshed periodically (slowly-updating side input pattern)", "Loading the reference data into a static PCollection once at pipeline start and never refreshing it", "Writing the whole reference dataset into BigQuery and running a separate batch join", "Avoiding joins altogether"], "answer": 0, "explain": "Beam supports 'slowly updating side inputs,' letting a pipeline periodically refresh a small reference dataset that's joined against a much larger main streaming input."},
+  {"type": "direct", "q": "Which of the following is NOT one of Beam's core windowing strategies?", "options": ["Fixed windows", "Sliding windows", "Session windows", "Partitioned windows"], "answer": 3, "explain": "Beam's core windowing strategies are Fixed, Sliding, Session, and the Global window. 'Partitioned windows' isn't a Beam windowing concept."}
+],
+
+"Data Analysis & Visualization": [
+  {"type": "scenario", "q": "What BigQuery feature reduces cost and scan time by physically dividing table data based on a column such as a date?", "options": ["Clustering", "Partitioning", "Sharding", "Federated queries"], "answer": 1, "explain": "Partitioning splits a table into segments (commonly by date) so queries can skip irrelevant partitions entirely, cutting bytes scanned and cost."},
+  {"type": "direct", "q": "Which BigQuery feature sorts data within a table (or partition) by one or more columns to speed up filtering on those columns?", "options": ["Clustering", "Partitioning", "Materialized views", "Authorized views"], "answer": 0, "explain": "Clustering co-locates related rows on disk based on the clustering columns, letting BigQuery prune data more precisely during filtering — often used alongside partitioning."},
+  {"type": "scenario", "q": "Analysts frequently run the same expensive aggregation query against a large, slowly-changing BigQuery table throughout the day. You want to reduce cost and latency for these repeated queries. What should you use?", "options": ["A materialized view over the base table", "Increasing the table's partition count", "Running the same query with the query cache disabled", "Exporting the table to Cloud Storage and querying it with Dataproc instead"], "answer": 0, "explain": "Materialized views precompute and incrementally maintain query results, so repeated queries against a slowly-changing table can be served faster and cheaper than recomputing from scratch."},
+  {"type": "direct", "q": "What is the main difference between a BigQuery view and a materialized view?", "options": ["A materialized view precomputes and stores results (refreshed incrementally), while a standard view is just a saved query re-executed each time it's queried", "Views can accept parameters and materialized views cannot", "Materialized views are always more expensive to query", "Standard views store data physically"], "answer": 0, "explain": "A logical view is just a stored SQL query with no separate storage; a materialized view stores computed results that Google keeps fresh incrementally, improving performance for repeated queries."},
+  {"type": "scenario", "q": "You need to grant an analyst access to query specific rows and columns of a sensitive BigQuery table (e.g., only their region's data) without giving them access to the underlying full table. What should you use?", "options": ["Row-level and column-level security (access policies and policy tags)", "Granting BigQuery Data Editor on the whole table", "Exporting a filtered copy of the table daily", "IAM alone with no row/column controls"], "answer": 0, "explain": "BigQuery supports row-level access policies and column-level security (via policy tags), plus authorized views, to expose only permitted subsets of data to specific users without duplicating data."},
+  {"type": "direct", "q": "Which BigQuery feature allows you to query data across multiple Google Cloud projects, provided you have appropriate access?", "options": ["Cross-project queries using fully qualified table references", "BigQuery ML", "Scheduled queries", "Data Transfer Service only"], "answer": 0, "explain": "BigQuery lets you reference tables in other projects using project.dataset.table syntax, as long as the querying identity has appropriate IAM permissions on the source project."},
+  {"type": "scenario", "q": "A dashboard needs to reflect the latest data with at most a 5-minute delay, querying a BigQuery table updated via streaming inserts. Analysts occasionally notice recent rows missing from query results. What is the most likely explanation?", "options": ["Streamed rows can sit briefly in a streaming buffer before being fully committed, causing a short propagation delay", "BigQuery guarantees zero replication delay always", "The dashboard's cache needs to be cleared manually", "This indicates a billing account issue"], "answer": 0, "explain": "Recently streamed rows sit briefly in a streaming buffer before being fully committed to storage; this can cause short visibility delays and limitations on running certain DML against very recent rows."},
+  {"type": "direct", "q": "What is the purpose of BigQuery's 'slot' resource?", "options": ["A slot represents a unit of computational capacity used to execute queries", "A slot is a storage unit for archived tables", "A slot is a type of IAM role", "A slot is a scheduled query trigger"], "answer": 0, "explain": "Slots are the virtual CPUs BigQuery uses to execute SQL queries; capacity-based (flat-rate/edition) pricing reserves a number of slots, while on-demand pricing allocates slots dynamically."},
+  {"type": "scenario", "q": "You want business analysts to explore a large BigQuery dataset visually, build dashboards, and share reports, without writing SQL. Which tool should you recommend?", "options": ["Looker Studio (or Looker)", "The raw BigQuery console only", "Cloud Shell", "The gcloud CLI"], "answer": 0, "explain": "Looker Studio (formerly Data Studio) is Google's self-serve BI/dashboarding tool designed for exactly this — connecting to BigQuery and letting non-SQL users build visual reports."},
+  {"type": "direct", "q": "Which BigQuery capability lets you query data stored in a different format or location, such as a Google Sheet, without first loading it into BigQuery storage?", "options": ["External (federated) tables", "Materialized views", "Scheduled queries", "Table snapshots"], "answer": 0, "explain": "External (federated) tables in BigQuery allow SQL querying of data in place — including Sheets, Cloud Storage, and Bigtable — without importing or duplicating it."},
+  {"type": "scenario", "q": "Your finance team wants a point-in-time, read-only, cost-efficient copy of a BigQuery table as it existed at end of quarter, for audit purposes, without duplicating the full storage cost of a copy. What feature should you use?", "options": ["BigQuery table snapshots", "Exporting the table to CSV in Cloud Storage", "Creating a full table copy job", "Time travel alone, with no snapshot"], "answer": 0, "explain": "BigQuery table snapshots capture a table's state at a point in time and only bill for storage of data that differs from the source, making them cheaper than full copies for audit or point-in-time needs."},
+  {"type": "direct", "q": "What is BigQuery's default retention window for 'time travel', which lets you query a table's historical state?", "options": ["7 days (configurable from 2–7 days)", "24 hours only", "90 days by default with no configuration", "Unlimited by default"], "answer": 0, "explain": "BigQuery time travel defaults to 7 days and can be configured (2–7 days), letting you query, restore, or clone a table's state as of a past point within that window."}
+],
+
+"Machine Learning Integration": [
+  {"type": "scenario", "q": "You want to train and deploy a custom ML model with managed infrastructure and end-to-end MLOps pipelines. Which service?", "options": ["Vertex AI", "BigQuery ML", "Cloud Functions", "Dataflow"], "answer": 0, "explain": "Vertex AI is Google Cloud's unified ML platform, covering training, tuning, deployment, and pipeline orchestration for custom models."},
+  {"type": "scenario", "q": "You want to build and train ML models directly using SQL syntax on data already sitting in your warehouse. Which service?", "options": ["BigQuery ML", "Vertex AI Pipelines", "AI Platform Notebooks", "TensorFlow Extended"], "answer": 0, "explain": "BigQuery ML lets you create and run ML models using familiar SQL directly against data already in BigQuery, without exporting it elsewhere."},
+  {"type": "scenario", "q": "You've deployed a fraud-detection model to production and need to detect when the distribution of incoming feature data starts to differ significantly from the training data, which could degrade accuracy. What should you set up?", "options": ["Vertex AI Model Monitoring for training-serving skew and drift detection", "Manually re-running training every day regardless of performance", "Cloud Monitoring CPU alerts on the serving VM", "BigQuery scheduled queries only"], "answer": 0, "explain": "Vertex AI Model Monitoring tracks training-serving skew and prediction drift by comparing production request/response data against training data or a baseline, alerting when distributions diverge."},
+  {"type": "direct", "q": "In MLOps, what is the purpose of a feature store, such as Vertex AI Feature Store?", "options": ["To centrally manage, serve, and share ML features consistently between training and online serving, avoiding train/serve skew", "To store trained model binaries", "To orchestrate Airflow DAGs", "To log prediction requests only"], "answer": 0, "explain": "A feature store centralizes feature computation and storage so the same feature values/logic are used consistently in both training and low-latency online serving, reducing training-serving skew."},
+  {"type": "scenario", "q": "Your data science team wants to track experiment parameters, metrics, and artifacts across many model training runs, to compare and reproduce results later. What should they use?", "options": ["Vertex AI Experiments", "Cloud Logging alone", "BigQuery audit logs", "Cloud Storage folder naming conventions only"], "answer": 0, "explain": "Vertex AI Experiments is designed to track and compare parameters, metrics, and artifacts across training runs, supporting reproducibility and model comparison."},
+  {"type": "direct", "q": "What is the purpose of Vertex AI Pipelines?", "options": ["To orchestrate and automate ML workflows (data prep, training, evaluation, deployment) as a reproducible, versioned pipeline", "To provide a managed relational database", "To host a BI dashboard", "To manage IAM policies"], "answer": 0, "explain": "Vertex AI Pipelines (built on Kubeflow Pipelines/TFX) lets you define ML workflows as a DAG of containerized steps, enabling reproducible, automated, and versioned ML pipelines."},
+  {"type": "scenario", "q": "A model that performed well in training and initial deployment is showing degraded accuracy in production several months later, though no code changes were made. What is the most likely cause, and what practice would catch it earlier?", "options": ["Data/concept drift — the real-world data distribution has shifted since training; ongoing model monitoring would catch this", "The model was never actually trained", "GCP silently changed the model weights", "This is expected and requires no action"], "answer": 0, "explain": "Concept/data drift — where the statistical properties of production data diverge from training data over time — is a common cause of degrading model performance and is exactly what model monitoring is meant to catch early."},
+  {"type": "direct", "q": "What does 'training-serving skew' refer to?", "options": ["A discrepancy between how features are computed during training versus during online serving, leading to inconsistent predictions", "A difference in GPU vs CPU training speed", "A billing discrepancy between training and prediction jobs", "The time delay between training start and completion"], "answer": 0, "explain": "Training-serving skew happens when feature engineering logic differs (even subtly) between the training pipeline and the serving pipeline, causing production predictions to differ from what was expected based on training performance."},
+  {"type": "scenario", "q": "You need to deploy a model to serve real-time predictions with low latency for a mobile app, and traffic is unpredictable and can spike suddenly. What deployment approach should you use on Vertex AI?", "options": ["Deploy the model to a Vertex AI Endpoint with autoscaling enabled", "Run batch prediction jobs on a fixed schedule", "Export the model and run it manually on a single VM", "Use BigQuery ML only, with no serving endpoint"], "answer": 0, "explain": "Vertex AI Endpoints support online (real-time) predictions with autoscaling, which handles unpredictable traffic spikes automatically — unlike scheduled batch prediction, which is for offline scoring."},
+  {"type": "direct", "q": "Which best distinguishes 'batch prediction' from 'online prediction' in Vertex AI?", "options": ["Batch prediction processes large volumes asynchronously without a persistent endpoint, while online prediction serves low-latency requests via a deployed endpoint", "Batch prediction is always more accurate", "Online prediction cannot be autoscaled", "There is no meaningful difference"], "answer": 0, "explain": "Batch prediction is for large offline scoring jobs where latency doesn't matter, while online prediction requires a deployed endpoint for real-time, low-latency responses to individual requests."},
+  {"type": "scenario", "q": "You want to compare a newly trained model against the currently deployed production model by gradually routing a small percentage of live traffic to it before fully switching over. What Vertex AI Endpoint feature enables this?", "options": ["Traffic splitting across multiple deployed model versions on the same endpoint", "Deploying to two entirely separate GCP projects", "BigQuery ML model versioning", "Model Garden"], "answer": 0, "explain": "Vertex AI Endpoints support deploying multiple model versions and splitting traffic between them by percentage — enabling canary rollouts or A/B testing of new models."},
+  {"type": "direct", "q": "What is the purpose of continuous evaluation in an MLOps pipeline?", "options": ["Automatically and periodically assessing a deployed model's prediction quality against ground truth as it becomes available, to catch performance degradation", "Continuously retraining the model on every single new data row in real time regardless of cost", "Evaluating code style in the training scripts", "Monitoring GPU temperature"], "answer": 0, "explain": "Continuous evaluation compares a deployed model's predictions to actual outcomes (as ground truth arrives) on an ongoing basis, surfacing accuracy degradation that simple infrastructure monitoring wouldn't catch."}
+],
+
+"Data Security & Governance": [
+  {"type": "scenario", "q": "Which product is used to discover, tag, and manage metadata across GCP data assets for governance?", "options": ["Dataplex / Data Catalog", "Cloud DLP", "IAM", "Cloud Asset Inventory"], "answer": 0, "explain": "Dataplex (which incorporates Data Catalog) provides a unified metadata layer for discovering, tagging, and governing data assets across BigQuery, Cloud Storage, and more."},
+  {"type": "scenario", "q": "Which service scans and can redact sensitive data such as PII in text and structured data?", "options": ["Sensitive Data Protection (Cloud DLP)", "Cloud KMS", "Cloud Armor", "Security Command Center"], "answer": 0, "explain": "Sensitive Data Protection (formerly Cloud DLP) inspects and can de-identify or redact sensitive data like PII across text, structured tables, and images."},
+  {"type": "direct", "q": "What is the best practice for granting a service account only the permissions it needs?", "options": ["The principle of least privilege", "Granting the Owner role for simplicity", "Using the default compute service account everywhere", "Sharing Editor access broadly across the project"], "answer": 0, "explain": "Least privilege — granting only the specific roles required for a task — limits blast radius if credentials are compromised and is a core exam theme for securing pipelines."},
+  {"type": "scenario", "q": "Your organization must ensure BigQuery data at rest is encrypted with keys you manage and control, and can be revoked to render the data inaccessible. What should you use?", "options": ["Customer-managed encryption keys (CMEK) via Cloud KMS", "Google-managed default encryption only", "VPC Service Controls", "IAM conditional bindings"], "answer": 0, "explain": "CMEK lets you control the encryption keys (via Cloud KMS) protecting data at rest in BigQuery and other services, including the ability to revoke access by disabling or destroying the key."},
+  {"type": "direct", "q": "What is the purpose of VPC Service Controls?", "options": ["Creating a security perimeter around GCP resources to mitigate data exfiltration risk, even from authenticated users", "Encrypting data at rest", "Managing IAM roles and permissions", "Load balancing traffic across regions"], "answer": 0, "explain": "VPC Service Controls establish a perimeter around specified resources (like BigQuery, Cloud Storage) to prevent data from being copied or accessed from outside the trusted perimeter, even by users with valid credentials."},
+  {"type": "scenario", "q": "A regulation requires that certain customer data never leaves the EU. How should you enforce this in BigQuery?", "options": ["Set the dataset's location to an EU region/multi-region and use organization policies to restrict resource locations", "Rely on IAM roles alone", "Use Cloud CDN", "Enable BigQuery time travel"], "answer": 0, "explain": "BigQuery dataset location determines where data is physically stored; combined with organization policy constraints restricting allowed resource locations, this enforces data residency requirements."},
+  {"type": "direct", "q": "Which product provides centralized visibility into security findings, vulnerabilities, and misconfigurations across your GCP resources?", "options": ["Security Command Center", "Cloud Logging", "Cloud Monitoring", "Cloud Trace"], "answer": 0, "explain": "Security Command Center is GCP's centralized security and risk management platform, surfacing misconfigurations, vulnerabilities, and threats across your resources."},
+  {"type": "scenario", "q": "You need to audit who accessed a specific sensitive BigQuery table and what queries they ran, over the last 90 days. Where should you look?", "options": ["Cloud Audit Logs (Data Access logs) in Cloud Logging", "BigQuery INFORMATION_SCHEMA.TABLES only", "IAM Policy Analyzer", "The billing export"], "answer": 0, "explain": "Data Access audit logs record who accessed what data and what queries were run; they must be explicitly enabled for BigQuery (not on by default) and are viewable/retained via Cloud Logging."},
+  {"type": "direct", "q": "What is the purpose of a policy tag in BigQuery column-level security?", "options": ["To classify a column (e.g., as PII) and enforce fine-grained access control on it via a Data Catalog taxonomy", "To define a table's partitioning column", "To rename a column", "To set a column's data type"], "answer": 0, "explain": "Policy tags, defined in a Data Catalog taxonomy, are attached to columns to enforce column-level access control — e.g., restricting who can see a 'salary' or 'ssn' column."},
+  {"type": "scenario", "q": "Your company must comply with a regulation requiring detection and masking of credit card numbers appearing anywhere in unstructured support ticket text stored in Cloud Storage. What should you use?", "options": ["Sensitive Data Protection (DLP) inspection and de-identification templates", "IAM Conditions", "VPC Service Controls", "Cloud Armor"], "answer": 0, "explain": "DLP's built-in infoType detectors (including credit card numbers) can scan unstructured text and apply de-identification techniques like masking or tokenization."},
+  {"type": "direct", "q": "Which IAM concept lets you grant a role that only applies under specific conditions, such as a time window or resource attribute?", "options": ["IAM Conditions", "Organization Policies", "Custom roles", "Service accounts"], "answer": 0, "explain": "IAM Conditions let you attach conditional expressions (e.g., based on time, resource type, or tags) to role bindings, scoping when a grant is actually in effect."},
+  {"type": "scenario", "q": "A data engineering pipeline running on a Compute Engine VM needs to write to a specific BigQuery dataset only, and nothing else. What is the best-practice way to grant it access?", "options": ["Attach a dedicated service account to the VM with a role scoped only to that dataset", "Use your own personal user credentials on the VM", "Grant BigQuery Admin to the default Compute Engine service account project-wide", "Disable IAM and rely on network firewall rules only"], "answer": 0, "explain": "Best practice is a dedicated service account per workload, granted only the minimum role needed (e.g., BigQuery Data Editor on one dataset) rather than broad or shared credentials — following least privilege."},
+  {"type": "direct", "q": "What does 'separation of duties' typically mean in a data governance context?", "options": ["No single individual should have end-to-end control over a sensitive process", "All engineers should have Owner access for flexibility", "Every dataset must have exactly one owner", "Data must always be stored in a single region"], "answer": 0, "explain": "Separation of duties reduces fraud and error risk by ensuring different people are responsible for different stages of sensitive operations (e.g., requesting vs. approving access to sensitive data)."}
+],
+
+"Monitoring & Optimization": [
+  {"type": "scenario", "q": "To minimize BigQuery query costs during development, what should you check before running a large query?", "options": ["A dry run to estimate bytes scanned", "Nothing — run it and check the bill afterward", "Whether SELECT * will work", "Whether the query cache is disabled"], "answer": 0, "explain": "A dry run estimates the bytes a query will scan without executing it, letting you catch expensive queries before they run, since BigQuery on-demand pricing is scan-based."},
+  {"type": "scenario", "q": "Your team runs many ad hoc BigQuery queries with unpredictable patterns, and a few analysts occasionally submit very expensive queries by accident. You want to cap the maximum bytes any single query can process. What should you configure?", "options": ["A maximum bytes billed limit per query, plus custom quotas", "Deleting the analysts' accounts", "Switching every workload to Bigtable", "Disabling BigQuery entirely for analysts"], "answer": 0, "explain": "BigQuery lets you set a maximum bytes billed limit on individual queries (and custom quotas at the project/user level) to prevent runaway costs from a single expensive or accidental query."},
+  {"type": "direct", "q": "Which pricing model is generally more cost-effective for an organization with very high, sustained BigQuery query volume?", "options": ["Flat-rate/capacity pricing (editions with reservations)", "On-demand pricing", "Per-user licensing", "Free tier only"], "answer": 0, "explain": "For sustained heavy usage, capacity-based pricing (paying for reserved slot capacity) is typically more cost-effective than on-demand per-byte pricing, which is better suited to lighter or spiky usage."},
+  {"type": "scenario", "q": "A Dataproc batch job runs nightly and can tolerate node interruption and restarts. You want to minimize compute cost for this workload. What should you do?", "options": ["Use preemptible or Spot VMs for the secondary worker nodes", "Use only the largest available machine type", "Run the cluster continuously 24/7", "Disable autoscaling to guarantee fixed cost"], "answer": 0, "explain": "Preemptible/Spot VMs cost significantly less than standard VMs and are well-suited to fault-tolerant, interruptible batch workloads like nightly Dataproc jobs, cutting compute costs substantially."},
+  {"type": "direct", "q": "What GCP tool helps you forecast and set alerts on spend before it exceeds a defined budget?", "options": ["Cloud Billing budgets and alerts", "Cloud Monitoring uptime checks", "IAM Recommender", "Cloud Trace"], "answer": 0, "explain": "Cloud Billing budgets let you define a spend threshold and receive automatic alerts (and optionally trigger actions) as actual or forecasted spend approaches or exceeds it."},
+  {"type": "scenario", "q": "Your team wants to identify which specific BigQuery datasets or Dataflow jobs are driving most of the monthly bill, across multiple projects. What should you set up?", "options": ["Detailed billing export to BigQuery, broken down by SKU, label, and project", "Only the billing summary in the console", "Cloud Trace", "IAM audit logs"], "answer": 0, "explain": "Exporting detailed billing data to BigQuery lets you slice cost by project, SKU, label, and service using SQL — far more granular than the console's summary view — to pinpoint cost drivers."},
+  {"type": "direct", "q": "Which practice reduces BigQuery query cost most directly when a query only needs a few columns from a wide table?", "options": ["Selecting only the needed columns instead of SELECT *, since BigQuery is columnar and bills by bytes scanned", "Adding more clustering keys", "Increasing the query timeout", "Enabling caching"], "answer": 0, "explain": "Because BigQuery is a columnar store and on-demand pricing bills by bytes scanned, selecting only necessary columns (instead of SELECT *) directly reduces the bytes scanned and cost."},
+  {"type": "scenario", "q": "A team stores raw ingestion data in a BigQuery table that grows daily but is only ever queried by date range. Costs are climbing because every query scans the whole table. What is the most direct fix?", "options": ["Partition the table by ingestion date so queries can prune irrelevant partitions", "Add more BigQuery slots", "Switch the table to Bigtable", "Increase the query result cache duration"], "answer": 0, "explain": "Date partitioning lets BigQuery skip scanning partitions outside a query's date filter, directly reducing bytes scanned and cost for date-range queries — one of the most impactful and common cost optimizations."},
+  {"type": "direct", "q": "What is a Committed Use Discount (CUD) primarily used for?", "options": ["Reducing compute costs in exchange for committing to a consistent level of usage over a 1- or 3-year term", "Reducing BigQuery storage cost only", "A one-time discount for new customers", "A discount that applies automatically with no commitment"], "answer": 0, "explain": "Committed Use Discounts trade a commitment to a baseline level of resource usage over 1 or 3 years for a significant discount versus on-demand compute pricing."},
+  {"type": "scenario", "q": "You notice that a Cloud Storage bucket storing rarely-accessed logs is contributing significantly to your bill because it's set to Standard storage. What's the most cost-effective long-term fix?", "options": ["Apply an Object Lifecycle Management rule to transition objects to Nearline/Coldline/Archive based on age", "Delete the bucket", "Increase the bucket's replication", "Move the logs to Persistent Disk"], "answer": 0, "explain": "Object Lifecycle Management rules automatically transition aging, infrequently accessed objects to cheaper storage classes, directly reducing storage cost for data that doesn't need Standard-class pricing."},
+  {"type": "direct", "q": "Which of the following is a recommended way to avoid unexpectedly high costs from an analyst running SELECT * on a huge table in BigQuery?", "options": ["Set per-query or per-user custom quotas / maximum bytes billed limits, and educate on selecting only needed columns", "Remove BigQuery access from all analysts", "Only allow queries during business hours", "Disable the BigQuery UI"], "answer": 0, "explain": "A combination of technical guardrails (custom quotas, max bytes billed limits) and best-practice guidance (avoiding SELECT * on wide/huge tables) is the recommended way to prevent runaway ad hoc query costs."},
+  {"type": "direct", "q": "What does a Service Level Objective (SLO) represent?", "options": ["A target level of reliability for a service (e.g., 99.9% availability) that the team aims to meet", "A contractual guarantee with financial penalties", "The maximum possible uptime a system can achieve", "A type of IAM policy"], "answer": 0, "explain": "An SLO is an internal target for a reliability metric (like availability or latency), distinct from an SLA, which is typically a customer-facing contractual commitment often with consequences for breach."},
+  {"type": "scenario", "q": "Your team wants to validate data quality (e.g., no null primary keys, values within expected ranges) as data flows through a pipeline, and halt or flag the load if checks fail. What should you incorporate?", "options": ["Automated data quality checks/assertions as a pipeline step, with alerting or halting on failure", "Manual spot-checking by an analyst once a month", "No validation, to keep the pipeline simple", "Relying solely on downstream BI tools to catch bad data"], "answer": 0, "explain": "Embedding automated data quality validation directly in the pipeline (e.g., via Dataplex data quality tasks or custom checks) catches issues at the source rather than letting bad data propagate to consumers."},
+  {"type": "scenario", "q": "You need to monitor a critical Dataflow streaming pipeline and be paged immediately if the system lag (processing delay) exceeds a threshold. What should you configure?", "options": ["A Cloud Monitoring alerting policy on the Dataflow system lag metric", "Checking the Dataflow console manually each morning", "A weekly email report only", "Disabling monitoring to reduce noise"], "answer": 0, "explain": "Cloud Monitoring can alert on Dataflow's built-in metrics (like system lag or data freshness) in near real time, notifying on-call engineers automatically rather than relying on manual checks."}
+],
+
+"Workflow Orchestration": [
+  {"type": "scenario", "q": "Which tool orchestrates complex multi-step workflows across GCP and external services, and is built on Apache Airflow?", "options": ["Cloud Composer", "Dataflow", "Data Fusion", "Cloud Functions"], "answer": 0, "explain": "Cloud Composer is a managed Apache Airflow environment used to author, schedule, and monitor workflows (DAGs) that span multiple services."},
+  {"type": "scenario", "q": "Your data pipeline consists of a BigQuery load job, a Dataflow transformation, and a Cloud Function notification — each step depends on the previous one succeeding, with retries and alerting needed on failure. What should you use to coordinate this?", "options": ["A Cloud Composer DAG defining task dependencies, retries, and failure alerts", "A single Cloud Function chaining everything synchronously", "Cron jobs on a Compute Engine VM", "Pub/Sub topics with no orchestration logic"], "answer": 0, "explain": "Cloud Composer (managed Airflow) is designed exactly for multi-step, cross-service workflows with dependencies, retries, and alerting — a much more maintainable approach than ad hoc scripting."},
+  {"type": "direct", "q": "In Airflow/Cloud Composer terminology, what is a 'DAG'?", "options": ["A Directed Acyclic Graph defining a workflow's tasks and their dependencies", "A type of BigQuery table", "A Dataflow job template", "A Compute Engine disk snapshot"], "answer": 0, "explain": "A DAG (Directed Acyclic Graph) is Airflow's core abstraction for a workflow: a set of tasks with dependencies between them and no cycles."},
+  {"type": "scenario", "q": "You want a Cloud Composer DAG to run its downstream tasks only once a file has landed in a Cloud Storage bucket, rather than on a fixed schedule. What should you use?", "options": ["A GCS object sensor or event-driven trigger in the DAG", "A cron schedule with a 1-minute interval", "A BigQuery scheduled query", "Manual triggering only"], "answer": 0, "explain": "Sensors (or newer event-driven DAG triggers) let a DAG wait for an external condition, like a file's arrival in Cloud Storage, before proceeding — avoiding wasteful fixed-interval polling."},
+  {"type": "direct", "q": "What is the purpose of Airflow 'operators' within a DAG?", "options": ["They define a single unit of work/task, such as running a BigQuery query or a Dataflow job", "They define the overall schedule of the DAG", "They store DAG configuration variables", "They manage IAM permissions"], "answer": 0, "explain": "Operators are the building blocks of tasks in a DAG — e.g., BigQueryInsertJobOperator, DataflowStartFlexTemplateOperator — each representing one step of work."},
+  {"type": "scenario", "q": "Multiple teams share one Cloud Composer environment, and one team's long-running DAG is starving other DAGs of worker capacity. What's a good mitigation?", "options": ["Use pools (or a separate environment) to isolate resource capacity per team/workflow", "Delete the other team's DAGs", "Disable retries globally", "Increase the DAG's priority_weight to an arbitrarily high value with no other change"], "answer": 0, "explain": "Airflow pools let you limit concurrent task slots for specific workloads, and running noisy or resource-heavy teams in a separate Composer environment avoids one team starving another's capacity."},
+  {"type": "direct", "q": "Which of these is a benefit of using Cloud Composer over hand-rolled cron jobs for pipeline orchestration?", "options": ["Built-in dependency management, retries, a monitoring UI, and integration with many GCP operators", "Composer removes the need for IAM permissions", "Composer eliminates all pipeline costs", "Composer requires no DAG code at all"], "answer": 0, "explain": "Composer (managed Airflow) provides dependency graphs, automatic retries, a monitoring UI, alerting, and prebuilt operators for many GCP services — capabilities plain cron jobs lack out of the box."},
+  {"type": "scenario", "q": "A DAG task that loads data into BigQuery occasionally fails due to a transient network error. You want it to automatically retry a few times with a delay before being marked as failed. What should you configure?", "options": ["The task's retries and retry_delay parameters", "A separate DAG that reruns the whole pipeline manually", "A shorter schedule_interval for the DAG", "Removing the task from the DAG"], "answer": 0, "explain": "Airflow tasks support retries and retry_delay configuration, so transient failures are retried automatically before the task is marked as failed."},
+  {"type": "direct", "q": "What does 'idempotency' mean in the context of pipeline task design, and why does it matter for orchestration?", "options": ["A task can be safely rerun multiple times (e.g., after a retry) without causing duplicate or inconsistent results", "A task runs exactly once and can never be retried", "A task always completes in constant time", "A task requires no IAM permissions"], "answer": 0, "explain": "Idempotent tasks are critical in orchestrated pipelines because retries (from failures) shouldn't create duplicate data or side effects — e.g., using MERGE/upsert instead of INSERT for loads."},
+  {"type": "scenario", "q": "Your organization wants to trigger a Cloud Composer DAG in response to a Pub/Sub message rather than on a fixed schedule. What's an appropriate approach?", "options": ["A Cloud Function or Cloud Run service triggered by Pub/Sub that calls the Airflow REST API to trigger the DAG", "Polling Pub/Sub every second from inside the DAG only", "Using only schedule_interval='@once'", "There is no way to trigger a DAG outside of a schedule"], "answer": 0, "explain": "Event-driven DAG triggering is commonly implemented by having a lightweight Pub/Sub-triggered Cloud Function or Cloud Run service call the Airflow REST API (or gcloud composer command) to trigger the DAG run."},
+  {"type": "direct", "q": "Which managed service should you choose if your primary need is code-free, GUI-driven pipeline construction, rather than Python-based DAG authoring?", "options": ["Cloud Data Fusion", "Cloud Composer", "The Dataflow SDK", "Cloud Build"], "answer": 0, "explain": "Data Fusion offers a visual pipeline builder for ETL/ELT, whereas Composer requires writing DAGs in Python — pick based on whether your team prefers code or a GUI."}
+],
+
+"Designing Data Pipelines": [
+  {"type": "scenario", "q": "For disaster recovery planning, what's the key difference between RPO and RTO?", "options": ["RPO is the maximum acceptable data loss window; RTO is the maximum acceptable downtime", "RPO is the maximum acceptable downtime; RTO is the maximum acceptable data loss window", "They measure the same thing", "RPO applies only to compute resources, not data"], "answer": 0, "explain": "Recovery Point Objective (RPO) defines how much data loss (measured in time) is tolerable, while Recovery Time Objective (RTO) defines how long the system can be down before recovery — two distinct DR metrics."},
+  {"type": "scenario", "q": "Your streaming pipeline must survive the failure of an entire GCP region with minimal data loss and minimal downtime, for a mission-critical use case. What architecture pattern should you use?", "options": ["Deploy pipeline components across multiple regions with active-active or active-passive failover", "Rely on a single-region deployment with monthly backups", "Only replicate the BigQuery dataset", "Use zonal Persistent Disks only"], "answer": 0, "explain": "True regional resilience requires multi-region deployment of the full pipeline (ingestion, processing, storage) with an active-active or active-passive failover strategy — a single-region setup can't survive a regional outage."},
+  {"type": "scenario", "q": "A batch pipeline occasionally fails midway through processing, leaving a BigQuery table with partial data. Downstream consumers sometimes read this partial state. How should you redesign the pipeline to avoid this?", "options": ["Write to a staging table and atomically swap or MERGE into the final table only after the job fully succeeds", "Just rerun the job faster next time", "Ask consumers to check a timestamp column manually", "Disable the pipeline"], "answer": 0, "explain": "Writing to a staging location and only promoting to the final table on full success (e.g., via table copy/swap or MERGE) avoids exposing partial/inconsistent data to downstream consumers during failures."},
+  {"type": "direct", "q": "What is the purpose of a dead-letter queue/topic in a reliable pipeline design?", "options": ["To capture messages/records that repeatedly fail processing, so they don't block the pipeline and can be investigated separately", "To permanently discard bad data", "To increase throughput", "To store successfully processed records"], "answer": 0, "explain": "A dead-letter queue isolates messages that can't be processed successfully after retries, letting the main pipeline continue while preserving the failed records for debugging or reprocessing."},
+  {"type": "scenario", "q": "You need to design a pipeline where, if a downstream service temporarily goes down, upstream data isn't lost and processing resumes automatically once the service recovers. Which combination of practices best achieves this?", "options": ["A durable buffer (like Pub/Sub) between stages, combined with retries and acknowledgement-based processing", "Processing everything synchronously with no buffering", "Storing data only in application memory", "Disabling retries to fail fast"], "answer": 0, "explain": "A durable message buffer like Pub/Sub decouples producers from consumers, retaining messages until they're successfully acknowledged, so a downstream outage doesn't cause data loss — combined with retry logic for resilience."},
+  {"type": "direct", "q": "What does 'graceful degradation' mean in the context of a reliable data system?", "options": ["The system continues providing partial or reduced functionality during a failure, rather than failing completely", "The system shuts down immediately on any error", "The system silently ignores all errors", "The system always guarantees 100% uptime"], "answer": 0, "explain": "Graceful degradation means designing a system to keep serving some functionality (e.g., stale cached data, reduced features) when a dependency fails, rather than a hard, total outage."},
+  {"type": "direct", "q": "Why is it important to design pipeline write operations (e.g., loading into BigQuery) to be idempotent?", "options": ["So that retries after a failure don't create duplicate or inconsistent data", "So that the pipeline runs faster", "So that IAM permissions are simplified", "So that storage costs decrease"], "answer": 0, "explain": "Idempotent writes (e.g., using MERGE/upsert keyed on a unique ID, or deterministic overwrite) ensure that retrying a failed or partially completed operation produces the same correct end state rather than duplicating data."},
+  {"type": "direct", "q": "What is the main reliability risk of running an unbounded streaming source through a Dataflow job with no windowing strategy at all?", "options": ["Failures are harder to recover from cleanly, since there's no logical grouping of data over time to define a completion point", "The job will always run out of memory immediately", "Streaming sources cannot be used with Dataflow at all", "IAM permissions cannot be granted to streaming jobs"], "answer": 0, "explain": "Without windowing, there's no natural boundary for aggregating and finalizing unbounded data, which complicates failure recovery and makes it unclear when results for a given period are 'final' — windowing exists to address this."}
+]
+
+};
+
+const TOPIC_TARGET = 50; // goal per domain
+</script>
+<script>
+const TIME_PER_Q = 60;
+let activeSet = [];      // the questions being run this session
+let selectedTopic = null; // topic name or "__all__"
+let current = 0;
+let selected = null;
+let answers = [];
+let timer = null;
+let timeLeft = TIME_PER_Q;
+let totalTimeUsed = 0;
+let markedSet = new Set();
+
+const topics = Object.keys(QUESTION_BANK);
+
+function buildTopicGrid(){
+  const grid = document.getElementById('topic-grid');
+  grid.innerHTML = '';
+
+  const allRow = document.createElement('div');
+  allRow.className = 'topic-row';
+  allRow.dataset.topic = '__all__';
+  allRow.innerHTML = `<span class="topic-name">All domains (mixed)</span>`;
+  allRow.addEventListener('click', () => selectTopic('__all__', allRow));
+  grid.appendChild(allRow);
+
+  topics.forEach(t => {
+    const row = document.createElement('div');
+    row.className = 'topic-row';
+    row.dataset.topic = t;
+    row.innerHTML = `<span class="topic-name">${t}</span>`;
+    row.addEventListener('click', () => selectTopic(t, row));
+    grid.appendChild(row);
+  });
+}
+
+function selectTopic(topic, rowEl){
+  selectedTopic = topic;
+  document.querySelectorAll('.topic-row').forEach(r => r.classList.remove('selected'));
+  rowEl.classList.add('selected');
+  const n = topic === '__all__'
+    ? topics.reduce((s,t)=>s+QUESTION_BANK[t].length,0)
+    : QUESTION_BANK[topic].length;
+  document.getElementById('selection-summary').textContent =
+    `${topic === '__all__' ? 'All domains' : topic} — ${n} questions ready`;
+  document.getElementById('btn-start').disabled = false;
+}
+
+function buildActiveSet(){
+  let pool = [];
+  if (selectedTopic === '__all__'){
+    topics.forEach(t => {
+      QUESTION_BANK[t].forEach((q, idx) => pool.push({...q, domain:t, qid: t + '::' + idx}));
+    });
+  } else {
+    QUESTION_BANK[selectedTopic].forEach((q, idx) => pool.push({...q, domain:selectedTopic, qid: selectedTopic + '::' + idx}));
+  }
+  // shuffle
+  for (let i = pool.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i+1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool;
+}
+
+function buildPipeline(){
+  const pipelineEl = document.getElementById('pipeline');
+  pipelineEl.innerHTML = '';
+  activeSet.forEach((_, i) => {
+    const seg = document.createElement('div');
+    seg.className = 'segment';
+    seg.id = 'seg-' + i;
+    pipelineEl.appendChild(seg);
+  });
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+buildTopicGrid();
+
+document.getElementById('btn-start').addEventListener('click', () => {
+  activeSet = buildActiveSet();
+  answers = new Array(activeSet.length).fill(null);
+  current = 0;
+  totalTimeUsed = 0;
+  markedSet.clear();
+  buildPipeline();
+  showScreen('screen-quiz');
+  loadQuestion();
+});
+
+function loadQuestion(){
+  clearInterval(timer);
+  timeLeft = TIME_PER_Q;
+  selected = null;
+  const q = activeSet[current];
+  document.getElementById('hud-progress').innerHTML = `QUESTION <span class="badge">${current+1}</span> OF <span class="badge">${activeSet.length}</span>`;
+  document.getElementById('q-domain').textContent = 'STAGE — ' + q.domain.toUpperCase();
+  document.getElementById('q-type').textContent = '· ' + q.type;
+  document.getElementById('q-text').textContent = q.q;
+  document.getElementById('mark-review').checked = markedSet.has(current);
+  const optWrap = document.getElementById('q-options');
+  optWrap.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const div = document.createElement('div');
+    div.className = 'option';
+    div.innerHTML = `<span class="opt-radio"></span><span class="opt-body"><span class="opt-letter">${String.fromCharCode(65+i)}.</span> ${opt}</span>`;
+    div.addEventListener('click', () => {
+      selected = i;
+      document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+      div.classList.add('selected');
+    });
+    optWrap.appendChild(div);
+  });
+
+  updateSegments();
+  updateTimerDisplay();
+  timer = setInterval(() => {
+    timeLeft--;
+    totalTimeUsed++;
+    updateTimerDisplay();
+    if (timeLeft <= 0){
+      clearInterval(timer);
+      commitAnswer();
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay(){
+  const el = document.getElementById('hud-timer');
+  const mm = String(Math.floor(Math.max(timeLeft,0)/60)).padStart(2,'0');
+  const ss = String(Math.max(timeLeft,0)%60).padStart(2,'0');
+  el.textContent = `${mm}:${ss}`;
+  el.classList.toggle('low', timeLeft <= 10);
+}
+
+function updateSegments(){
+  activeSet.forEach((_, i) => {
+    const seg = document.getElementById('seg-' + i);
+    seg.classList.remove('current','correct','wrong');
+    if (answers[i] !== null){
+      seg.classList.add(answers[i].correct ? 'correct' : 'wrong');
+    } else if (i === current){
+      seg.classList.add('current');
+    }
+    seg.classList.toggle('marked', markedSet.has(i));
+  });
+}
+
+document.getElementById('mark-review').addEventListener('change', (e) => {
+  if (e.target.checked) markedSet.add(current);
+  else markedSet.delete(current);
+  updateSegments();
+});
+
+function commitAnswer(){
+  const q = activeSet[current];
+  const isCorrect = selected === q.answer;
+  answers[current] = { selectedIndex: selected, correct: isCorrect };
+  if (current < activeSet.length - 1){
+    current++;
+    loadQuestion();
+  } else {
+    finishQuiz();
+  }
+}
+
+document.getElementById('btn-next').addEventListener('click', () => { clearInterval(timer); commitAnswer(); });
+document.getElementById('btn-skip').addEventListener('click', () => { selected = null; clearInterval(timer); commitAnswer(); });
+
+document.getElementById('btn-end').addEventListener('click', () => {
+  const remaining = activeSet.length - (current + 1);
+  const msg = remaining > 0
+    ? `End the test now? ${remaining} unanswered question${remaining === 1 ? '' : 's'} will be marked incorrect.`
+    : 'End the test now?';
+  if (!confirm(msg)) return;
+  clearInterval(timer);
+  const q = activeSet[current];
+  if (answers[current] === null){
+    const isCorrect = selected === q.answer;
+    answers[current] = { selectedIndex: selected, correct: isCorrect };
+  }
+  finishQuiz(true);
+});
+
+function finishQuiz(endedEarly){
+  updateSegments();
+  const correctCount = answers.filter(a => a && a.correct).length;
+  const wrongCount = answers.length - correctCount;
+  const pct = Math.round((correctCount / activeSet.length) * 100);
+
+  document.getElementById('res-score').textContent = pct + '%';
+  document.getElementById('res-correct').textContent = correctCount;
+  document.getElementById('res-wrong').textContent = wrongCount;
+  const mm = String(Math.floor(totalTimeUsed/60)).padStart(1,'0');
+  const ss = String(totalTimeUsed%60).padStart(2,'0');
+  document.getElementById('res-time').textContent = `${mm}:${ss}`;
+
+  const reviewWrap = document.getElementById('review-list');
+  reviewWrap.innerHTML = '';
+
+  if (!endedEarly){
+    activeSet.forEach((q, i) => {
+      const a = answers[i];
+      const userAnswer = a && a.selectedIndex !== null ? q.options[a.selectedIndex] : '(no answer — time expired or skipped)';
+      const item = document.createElement('div');
+      item.className = 'review-item';
+      item.innerHTML = `
+        <p class="rq">${i+1}. [${q.domain}] ${q.q}</p>
+        <div class="review-answer ${a && a.correct ? 'correct' : 'wrong'}">
+          <span>${a && a.correct ? '✓' : '✗'}</span>
+          <span>Your answer: ${userAnswer}</span>
+        </div>
+        ${!(a && a.correct) ? `<div class="review-answer correct"><span>✓</span><span>Correct answer: ${q.options[q.answer]}</span></div>` : ''}
+        <div class="explain">${q.explain}</div>
+      `;
+      reviewWrap.appendChild(item);
+    });
+  }
+
+  saveAttempt({
+    domain: selectedTopic === '__all__' ? 'All domains' : selectedTopic,
+    timestamp: Date.now(),
+    endedEarly: !!endedEarly,
+    correctCount, wrongCount, total: activeSet.length, pct,
+    timeUsed: totalTimeUsed,
+    items: activeSet.map((q, i) => {
+      const a = answers[i];
+      return {
+        qid: q.qid, domain: q.domain, q: q.q, options: q.options, answer: q.answer,
+        selectedIndex: a ? a.selectedIndex : null,
+        correct: !!(a && a.correct)
+      };
+    })
+  });
+  renderWeakSpots();
+
+  showScreen('screen-results');
+}
+
+function resetToStart(){
+  document.querySelectorAll('.topic-row').forEach(r => r.classList.remove('selected'));
+  document.getElementById('btn-start').disabled = true;
+  document.getElementById('selection-summary').textContent = 'Select a domain above';
+  selectedTopic = null;
+  showScreen('screen-start');
+}
+
+document.getElementById('btn-retry').addEventListener('click', resetToStart);
+
+document.getElementById('btn-quiz-back').addEventListener('click', () => {
+  if (!confirm('Leave this attempt and go back to domain selection? Your progress on this run won\'t be saved.')) return;
+  clearInterval(timer);
+  resetToStart();
+});
+
+// ===== ATTEMPT HISTORY (stored locally in this browser only) =====
+const HISTORY_KEY = 'pde_practice_history_v1';
+const MAX_HISTORY = 20;
+
+function loadHistory(){
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+  catch(e){ return []; }
+}
+
+function saveAttempt(record){
+  let hist = loadHistory();
+  hist.unshift(record);
+  if (hist.length > MAX_HISTORY) hist = hist.slice(0, MAX_HISTORY);
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(hist)); }
+  catch(e){ /* storage unavailable — history just won't persist */ }
+}
+
+function formatWhen(ts){
+  const d = new Date(ts);
+  return d.toLocaleDateString(undefined, { month:'short', day:'numeric' }) + ' · ' +
+         d.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' });
+}
+
+function renderHistoryList(){
+  const hist = loadHistory();
+  const wrap = document.getElementById('history-list');
+  wrap.innerHTML = '';
+  if (hist.length === 0){
+    wrap.innerHTML = '<p class="empty-note">No attempts yet — finish or end a practice run and it will show up here.</p>';
+    return;
+  }
+  hist.forEach((rec, i) => {
+    const row = document.createElement('div');
+    row.className = 'attempt-row' + (rec.endedEarly ? ' locked' : '');
+    row.innerHTML = `
+      <div>
+        <div class="attempt-domain">${rec.domain}</div>
+        <div class="attempt-meta">${formatWhen(rec.timestamp)} · ${rec.correctCount}/${rec.total} correct</div>
+      </div>
+      <span class="attempt-badge">${rec.endedEarly ? 'ENDED EARLY' : 'COMPLETED'}</span>
+      <span class="attempt-score ${rec.pct >= 70 ? 'good' : 'bad'}">${rec.pct}%</span>
+    `;
+    if (!rec.endedEarly){
+      row.addEventListener('click', () => showHistoryDetail(i));
+    }
+    wrap.appendChild(row);
+  });
+}
+
+function showHistoryDetail(index){
+  const hist = loadHistory();
+  const rec = hist[index];
+  if (!rec || rec.endedEarly) return;
+
+  document.getElementById('history-list-view').style.display = 'none';
+  const detailView = document.getElementById('history-detail-view');
+  detailView.style.display = 'block';
+
+  document.getElementById('history-detail-heading').textContent = `${rec.domain} — ${formatWhen(rec.timestamp)}`;
+  document.getElementById('history-detail-stats').innerHTML = `
+    <div class="stat correct"><div class="n">${rec.correctCount}</div><div class="lbl">CORRECT</div></div>
+    <div class="stat wrong"><div class="n">${rec.wrongCount}</div><div class="lbl">INCORRECT</div></div>
+    <div class="stat"><div class="n">${rec.pct}%</div><div class="lbl">SCORE</div></div>
+  `;
+
+  const reviewWrap = document.getElementById('history-detail-review');
+  reviewWrap.innerHTML = '';
+  rec.items.forEach((q, i) => {
+    const userAnswer = q.selectedIndex !== null ? q.options[q.selectedIndex] : '(no answer — time expired or skipped)';
+    const item = document.createElement('div');
+    item.className = 'review-item';
+    item.innerHTML = `
+      <p class="rq">${i+1}. [${q.domain}] ${q.q}</p>
+      <div class="review-answer ${q.correct ? 'correct' : 'wrong'}">
+        <span>${q.correct ? '✓' : '✗'}</span>
+        <span>Your answer: ${userAnswer}</span>
+      </div>
+      ${!q.correct ? `<div class="review-answer correct"><span>✓</span><span>Correct answer: ${q.options[q.answer]}</span></div>` : ''}
+    `;
+    reviewWrap.appendChild(item);
+  });
+}
+
+function backToHistoryList(){
+  document.getElementById('history-detail-view').style.display = 'none';
+  document.getElementById('history-list-view').style.display = 'block';
+}
+
+document.getElementById('btn-view-history').addEventListener('click', () => {
+  backToHistoryList();
+  renderHistoryList();
+  showScreen('screen-history');
+});
+
+document.getElementById('btn-history-back').addEventListener('click', () => {
+  const inDetail = document.getElementById('history-detail-view').style.display !== 'none';
+  if (inDetail){
+    backToHistoryList();
+  } else {
+    showScreen('screen-start');
+  }
+});
+
+document.getElementById('btn-clear-history').addEventListener('click', () => {
+  if (!confirm('Clear all stored attempt history and weak-spot stats on this device? This cannot be undone.')) return;
+  try { localStorage.removeItem(HISTORY_KEY); } catch(e){}
+  renderHistoryList();
+  renderWeakSpots();
+});
+
+// ===== WEAK SPOTS (aggregated from stored history) =====
+function renderWeakSpots(){
+  const hist = loadHistory();
+  const panel = document.getElementById('weak-panel');
+  const list = document.getElementById('weak-list');
+
+  const misses = {}; // qid -> { count, domain, q, options, answer, explain }
+  hist.forEach(rec => {
+    rec.items.forEach(item => {
+      if (item.correct) return;
+      if (!misses[item.qid]){
+        misses[item.qid] = { count: 0, domain: item.domain, q: item.q, options: item.options, answer: item.answer };
+      }
+      misses[item.qid].count++;
+    });
+  });
+
+  const ranked = Object.values(misses).sort((a,b) => b.count - a.count).slice(0, 8);
+
+  if (ranked.length === 0){
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+  list.innerHTML = '';
+  ranked.forEach(m => {
+    const item = document.createElement('div');
+    item.className = 'weak-item';
+    item.innerHTML = `
+      <div class="weak-item-head">
+        <span class="weak-q">${m.q}</span>
+        <span class="weak-count">MISSED ${m.count}×</span>
+      </div>
+      <div class="weak-domain">${m.domain}</div>
+      <div class="weak-detail">
+        <div class="review-answer correct"><span>✓</span><span>Correct answer: ${m.options[m.answer]}</span></div>
+      </div>
+    `;
+    item.addEventListener('click', () => item.classList.toggle('open'));
+    list.appendChild(item);
+  });
+}
+
+renderWeakSpots();
+
+// ===== THEME SETTINGS =====
+const THEME_KEY = 'cert_prep_theme';
+const settingsBtn = document.getElementById('settings-btn');
+const settingsPanel = document.getElementById('settings-panel');
+
+function applyTheme(theme){
+  document.documentElement.dataset.theme = theme;
+  try { localStorage.setItem(THEME_KEY, theme); } catch(e){}
+  document.querySelectorAll('.theme-option').forEach(opt => {
+    opt.classList.toggle('active', opt.dataset.themeChoice === theme);
+  });
+}
+
+settingsBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  settingsPanel.classList.toggle('open');
+});
+
+document.addEventListener('click', (e) => {
+  if (!settingsPanel.contains(e.target) && e.target !== settingsBtn){
+    settingsPanel.classList.remove('open');
+  }
+});
+
+document.querySelectorAll('.theme-option').forEach(opt => {
+  opt.addEventListener('click', () => applyTheme(opt.dataset.themeChoice));
+});
+
+applyTheme(document.documentElement.dataset.theme || 'dark');
+</script>
+</body>
+</html>
