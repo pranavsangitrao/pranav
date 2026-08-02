@@ -1,3 +1,3 @@
-project_id  = "your-project-id"
+project_id  = "Keyword-rich"
 region      = "us-central1"
-bucket_name = "my-dev-bucket-123"
+bucket_name = "keyword-rich-001"
